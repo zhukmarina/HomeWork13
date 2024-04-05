@@ -21,11 +21,22 @@ class CatalogModel {
     var pcItems: [Pc] = []
     
     func loadData() {
-        
         dataLoader.loadCatalog { [weak self] catalog in
             guard let self = self else { return }
             
-            self.pcItems = catalog?.data ?? []
+            let savedItems = localStorage.getFavorites()
+            
+            if !savedItems.isEmpty {
+                self.pcItems = catalog?.data ?? []
+                for item in savedItems {
+                    if let index = self.pcItems.firstIndex(where: { $0.id == item.id }) {
+                        self.pcItems[index].isFavorite = true
+                    }
+                }
+            } else {
+                self.pcItems = catalog?.data ?? []
+            }
+            
             self.delegate?.dataDidLoad()
         }
     }
@@ -35,19 +46,16 @@ class CatalogModel {
     }
     
     func saveChangesIfNeeded() {
-        
         let favoriteItems = getFavoriteItems()
         let savedItems = localStorage.getFavorites()
         
         guard savedItems != favoriteItems else { return }
         
-        let totlaSet: Set<Favorite> = Set(savedItems + favoriteItems)
-        
-        localStorage.saveFavorites(Array(totlaSet))
+        let totalSet: Set<Favorite> = Set(savedItems + favoriteItems)
+        localStorage.saveFavorites(Array(totalSet))
     }
     
-    private func getFavoriteItems() -> [Favorite] {
-        
+    func getFavoriteItems() -> [Favorite] {
         return pcItems.filter({ $0.favorite() }).compactMap {
             Favorite(
                 id: $0.id,

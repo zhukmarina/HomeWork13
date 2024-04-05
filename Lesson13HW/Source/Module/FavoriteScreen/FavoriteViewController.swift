@@ -16,6 +16,7 @@ class FavoriteViewController: UIViewController {
         super.viewDidLoad()
         setupInitialState()
         model.loadData()
+        contentView.tableView.allowsMultipleSelectionDuringEditing = false
     }
     
     override func viewWillDisappear(_ animated: Bool) {
@@ -34,7 +35,11 @@ class FavoriteViewController: UIViewController {
         
         contentView.tableView.dataSource = self
         contentView.tableView.delegate = self
+        
+        let nib = UINib(nibName: "CustomFavoriteCell", bundle: nil)
+        contentView.tableView.register(nib, forCellReuseIdentifier: "CustomFavoriteCell")
     }
+    
 }
 
 // MARK: - FavoriteModelDelegate
@@ -59,15 +64,17 @@ extension FavoriteViewController: UITableViewDataSource {
     
     func tableView(_ tableView: UITableView, cellForRowAt indexPath: IndexPath) -> UITableViewCell {
         
-        guard let cell = tableView.dequeueReusableCell(withIdentifier: "FavoriteCell")
+        guard let cell = tableView.dequeueReusableCell(withIdentifier: "CustomFavoriteCell",for: indexPath) as? CustomFavoriteCell
         else {
             assertionFailure()
             return UITableViewCell()
         }
         
         let item = model.favoriteItems[indexPath.row]
-        cell.textLabel?.text = item.name
-        cell.detailTextLabel?.text = item.model + ", " + item.manufacturer
+        
+        cell.productCodeLabel.text = "Код товару: \(item.id)"
+        cell.nameProductLabel.text = item.name
+        cell.manufacturedProductLabel.text = item.model + ", " + item.manufacturer
         
         return cell
     }
@@ -75,5 +82,10 @@ extension FavoriteViewController: UITableViewDataSource {
 
 // MARK: - UITableViewDelegate
 extension FavoriteViewController: UITableViewDelegate {
-    
+    func tableView(_ tableView: UITableView, commit editingStyle: UITableViewCell.EditingStyle, forRowAt indexPath: IndexPath) {
+        if editingStyle == .delete{
+            model.removeFromFavorite(at: indexPath.row)
+            tableView.deleteRows(at: [indexPath], with: .automatic)
+        }
+    }
 }
